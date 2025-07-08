@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { getUserById, createUser } from "./routes";
 import { UserRepository } from "./storage";
 import { User, UserWithId } from "./domain";
+import { NoOpEvents } from "../events";
 
 // Mock repository
 class MockUserRepository implements UserRepository {
@@ -58,7 +59,7 @@ describe("Route Handlers", () => {
 
       const req = mockRequest({ id: user.id });
       const res = mockResponse();
-      const handler = getUserById(repository);
+      const handler = getUserById(repository, new NoOpEvents());
 
       await handler(req, res);
 
@@ -69,7 +70,7 @@ describe("Route Handlers", () => {
     it("should return 404 when user not found", async () => {
       const req = mockRequest({ id: "550e8400-e29b-41d4-a716-446655440000" });
       const res = mockResponse();
-      const handler = getUserById(repository);
+      const handler = getUserById(repository, new NoOpEvents());
 
       await handler(req, res);
 
@@ -80,7 +81,7 @@ describe("Route Handlers", () => {
     it("should return 400 for invalid UUID format", async () => {
       const req = mockRequest({ id: "invalid-uuid" });
       const res = mockResponse();
-      const handler = getUserById(repository);
+      const handler = getUserById(repository, new NoOpEvents());
 
       await handler(req, res);
 
@@ -98,7 +99,7 @@ describe("Route Handlers", () => {
 
       const req = mockRequest({}, user);
       const res = mockResponse();
-      const handler = createUser(repository);
+      const handler = createUser(repository, new NoOpEvents());
 
       await handler(req, res);
 
@@ -117,7 +118,7 @@ describe("Route Handlers", () => {
 
       const req = mockRequest({}, invalidUser);
       const res = mockResponse();
-      const handler = createUser(repository);
+      const handler = createUser(repository, new NoOpEvents());
 
       await handler(req, res);
 
@@ -137,7 +138,7 @@ describe("Route Handlers", () => {
 
       const req = mockRequest({}, incompleteUser);
       const res = mockResponse();
-      const handler = createUser(repository);
+      const handler = createUser(repository, new NoOpEvents());
 
       await handler(req, res);
 
