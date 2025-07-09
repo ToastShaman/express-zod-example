@@ -18,19 +18,26 @@
     "db:status": "docker run --rm --network host -v $(pwd):/liquibase/changelog -w /liquibase/changelog liquibase/liquibase:4.32 --defaults-file=liquibase-dev.properties status",
     "db:rollback": "docker run --rm --network host -v $(pwd):/liquibase/changelog -w /liquibase/changelog liquibase/liquibase:4.32 --defaults-file=liquibase-dev.properties rollback-count 1",
     "db:reset": "npm run db:down; npm run db:up && npm run db:migrate",
-    "fmt": "prettier . --write"
+    "fmt": "prettier . --write",
+    "lint": "eslint \"src/**/*.ts\"",
+    "lint:fix": "eslint \"src/**/*.ts\" --fix",
+    "lint:staged": "eslint"
   },
   "devDependencies": {
+    "@eslint/js": "^9.30.1",
     "@types/express": "^5.0.3",
     "@types/jest": "^30.0.0",
     "@types/node": "^24.0.10",
     "@types/pino": "^7.0.4",
+    "eslint": "^9.30.1",
+    "globals": "^16.3.0",
     "jest": "^30.0.4",
     "prettier": "3.6.2",
     "ts-jest": "^29.4.0",
     "ts-node": "^10.9.2",
     "ts-node-dev": "^2.0.0",
-    "typescript": "^5.8.3"
+    "typescript": "^5.8.3",
+    "typescript-eslint": "^8.36.0"
   },
   "dependencies": {
     "@slonik/pg-driver": "^47.3.2",

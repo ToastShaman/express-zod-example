@@ -85,8 +85,9 @@ export class PostgresUserRepository implements UserRepository {
     const record: UserRecord = UserRecordHelpers.fromDomain(user);
     const userWithId: UserWithId = { ...user, id: record.user_id };
 
-    await this.pool.one(sql.type(UUID)
-    `INSERT INTO users (user_id, version, name, email, latest, created_at, updated_at) 
+    await this.pool.one(sql.type(
+      UUID,
+    )`INSERT INTO users (user_id, version, name, email, latest, created_at, updated_at) 
     VALUES (${record.user_id}, ${record.version}, ${record.name}, ${record.email}, ${record.latest}, ${record.created_at}, ${record.updated_at}) RETURNING user_id`);
 
     return Promise.resolve(userWithId);
