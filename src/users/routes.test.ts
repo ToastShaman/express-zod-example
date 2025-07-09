@@ -1,21 +1,21 @@
 import { Request, Response } from "express";
 import { getUserById, createUser } from "./routes";
 import { UserRepository } from "./storage";
-import { User, UserWithId } from "./domain";
+import { User, UserWithId, UUID } from "./domain";
 import { NoOpEvents } from "../events";
 
 // Mock repository
 class MockUserRepository implements UserRepository {
-  private users: Map<string, UserWithId> = new Map();
+  private users: Map<UUID, UserWithId> = new Map();
 
   async put(user: User): Promise<UserWithId> {
-    const id = "550e8400-e29b-41d4-a716-446655440000";
+    const id: UUID = "550e8400-e29b-41d4-a716-446655440000";
     const userWithId: UserWithId = { ...user, id };
     this.users.set(id, userWithId);
     return userWithId;
   }
 
-  async get(id: string): Promise<UserWithId | undefined> {
+  async get(id: UUID): Promise<UserWithId | undefined> {
     return this.users.get(id);
   }
 

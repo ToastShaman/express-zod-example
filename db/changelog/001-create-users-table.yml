@@ -13,7 +13,7 @@ databaseChangeLog:
                     nullable: false
               - column:
                   name: version
-                  type: BIGINT
+                  type: VARCHAR(255)
                   constraints:
                     nullable: false
               - column:
