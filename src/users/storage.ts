@@ -1,4 +1,4 @@
-import { DatabasePool, sql } from "slonik";
+import { createTimestampTypeParser, DatabasePool, sql } from "slonik";
 import { User, UserWithId, UserWithIdSchema, UUID } from "./domain";
 import z from "zod";
 import { ulid } from "ulid";
@@ -17,8 +17,8 @@ const UserRecordSchema = z.object({
   name: z.string().min(1, "Name is required").max(255),
   email: z.string().max(255).email("Invalid email format"),
   latest: z.boolean().default(true),
-  created_at: z.string().default(() => new Date().toISOString()),
-  updated_at: z.string().default(() => new Date().toISOString()),
+  created_at: z.date().default(() => new Date()),
+  updated_at: z.date().default(() => new Date()),
 });
 
 type UserRecord = z.infer<typeof UserRecordSchema>;
@@ -34,6 +34,7 @@ class UserRecordHelpers {
 
   static fromDomain = (user: UserWithId | User): UserRecord => {
     const id = "id" in user ? user.id : crypto.randomUUID();
+    const now = new Date();
 
     return {
       user_id: id,
@@ -41,8 +42,8 @@ class UserRecordHelpers {
       name: user.name,
       email: user.email,
       latest: true,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
+      created_at: now,
+      updated_at: now,
     };
   };
 }
@@ -54,27 +55,25 @@ export class InMemoryUserRepository implements UserRepository {
     const record: UserRecord = UserRecordHelpers.fromDomain(user);
     const userWithId: UserWithId = { ...user, id: record.user_id };
     this.users.set(record.user_id, record);
-    return Promise.resolve(userWithId);
+    return userWithId;
   }
 
   async get(id: string): Promise<UserWithId | undefined> {
     const record = this.users.get(id);
 
     if (!record) {
-      return Promise.resolve(undefined);
+      return undefined;
     }
 
     const parsed = UserRecordHelpers.toDomain.safeParse(record);
 
     if (!parsed.success) {
-      return Promise.reject(
-        new Error(
-          `Failed to parse user with id ${id}: ${parsed.error.message}`,
-        ),
+      throw new Error(
+        `Failed to parse user with id ${id}: ${parsed.error.message}`,
       );
     }
 
-    return Promise.resolve(parsed.data);
+    return parsed.data;
   }
 }
 
@@ -85,23 +84,21 @@ export class PostgresUserRepository implements UserRepository {
     const record: UserRecord = UserRecordHelpers.fromDomain(user);
     const userWithId: UserWithId = { ...user, id: record.user_id };
 
-    await this.pool.one(sql.type(
-      UUID,
-    )`INSERT INTO users (user_id, version, name, email, latest, created_at, updated_at) 
-    VALUES (${record.user_id}, ${record.version}, ${record.name}, ${record.email}, ${record.latest}, ${record.created_at}, ${record.updated_at}) RETURNING user_id`);
+    await this.pool.query(sql.unsafe`
+      INSERT INTO users (user_id, version, name, email, latest, created_at, updated_at) 
+      VALUES (${record.user_id}, ${record.version}, ${record.name}, ${record.email}, ${record.latest}, ${sql.timestamp(record.created_at)}, ${sql.timestamp(record.updated_at)})
+    `);
 
-    return Promise.resolve(userWithId);
+    return userWithId;
   }
 
   async get(id: UUID): Promise<UserWithId | undefined> {
     const result = await this.pool.maybeOne(sql.type(UserRecordSchema)`
-    SELECT user_id, version, name, email, latest, created_at, updated_at 
-    FROM users 
-    WHERE user_id = ${id} AND latest = true
-  `);
+      SELECT user_id, version, name, email, latest, created_at, updated_at FROM users WHERE user_id = ${id} AND latest = true
+    `);
 
     if (!result) {
-      return Promise.resolve(undefined);
+      return undefined;
     }
 
     const parsed = UserRecordHelpers.toDomain.safeParse(result);
