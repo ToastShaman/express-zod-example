@@ -2,19 +2,21 @@ import express, { Request, Response } from "express";
 import { InMemoryUserRepository } from "./users/storage";
 import { create as users } from "./users/routes";
 import { PrintingEvents } from "./events";
+import { logger } from "./logger";
 import { pinoHttp } from "pino-http";
-import pino from "pino";
+import dotenv from "dotenv";
 
-const logger = pino();
-const events = new PrintingEvents(logger);
+// Load environment variables from .env file
+dotenv.config();
 
 const app = express();
-const port = 3000;
+const port = process.env.PORT || 3000;
 
-app.use(pinoHttp());
+app.use(pinoHttp({ logger }));
 app.use(express.json());
 
 // Create dependencies
+const events = new PrintingEvents(logger);
 const userRepository = new InMemoryUserRepository();
 
 // Mount the user router
@@ -25,5 +27,5 @@ app.get("/", (req: Request, res: Response) => {
 });
 
 app.listen(port, () => {
-  console.log(`Server running at http://localhost:${port}`);
+  logger.info(`Server running at http://localhost:${port}`);
 });
